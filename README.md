@@ -84,6 +84,4 @@ https://github.com/zhangbodong13-del/academic-paper-discovery
 - 缺少作者、年份、DOI 或网址时，会写“未核验”或“未找到”，不会猜测；
 - 论文引用前，建议打开 DOI 或出版方网页再次确认。
 
-**如果你只是使用者，看到这里就够了。**
 
-开发者需要的 D 盘安装、命令行、JSON 请求和测试说明见 [开发文档](docs/DEVELOPMENT.md)。
