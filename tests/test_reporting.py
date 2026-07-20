@@ -1,5 +1,6 @@
 import csv
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -21,6 +22,13 @@ from academic_paper_discovery.reporting import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+REPORT_HEADINGS = [
+    "必读",
+    "强相关",
+    "拓展阅读",
+    "论文对比表",
+    "局限与下一步",
+]
 
 
 @pytest.fixture
@@ -93,16 +101,7 @@ def test_markdown_has_only_requested_sections_in_order(
 ) -> None:
     report = render_markdown(sample_result)
 
-    headings = [
-        "## 必读",
-        "## 强相关",
-        "## 拓展阅读",
-        "## 论文对比表",
-        "## 局限与下一步",
-    ]
-    assert [report.index(heading) for heading in headings] == sorted(
-        report.index(heading) for heading in headings
-    )
+    assert re.findall(r"^## (.+)$", report, flags=re.MULTILINE) == REPORT_HEADINGS
     for removed in ("## 检索假设", "## 检索式", "## 论文网址", "## 数据源检索状态"):
         assert removed not in report
     assert "Paper \\| One" in report
@@ -110,6 +109,22 @@ def test_markdown_has_only_requested_sections_in_order(
     assert report.count("| 2 |") == 1
     assert report.count("| 3 |") == 1
     assert "未核验" in report
+
+
+def test_empty_result_uses_the_same_sections_and_generic_limitations() -> None:
+    result = SearchResult(
+        request=SearchRequest.with_defaults(topic="robot microscopy", current_year=2026),
+        query_plan={"year_from": 2022, "year_to": 2026},
+    )
+
+    report = render_markdown(result)
+
+    assert re.findall(r"^## (.+)$", report, flags=re.MULTILINE) == REPORT_HEADINGS
+    assert "数据源覆盖范围" in report
+    for source_detail in ("Crossref", "Europe PMC", "arXiv", "DBLP", "OpenAlex", "Semantic Scholar"):
+        assert source_detail not in report
+    for status_detail in ("成功", "失败", "跳过", "状态"):
+        assert status_detail not in report
 
 
 def test_table_contains_clickable_paper_and_code_links(sample_result: SearchResult) -> None:
