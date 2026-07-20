@@ -1,6 +1,6 @@
 # Simplify Academic Paper Discovery Output Design
 
-**Date:** 2026-07-20  
+**Date:** 2026-07-20
 **Status:** Approved for planning
 
 ## Goal
