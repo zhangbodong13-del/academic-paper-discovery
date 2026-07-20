@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 from enum import StrEnum
-from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -148,25 +147,12 @@ class Paper(BaseModel):
         return cleaned or None
 
 
-class SourceStatus(BaseModel):
-    """单一数据源本次运行的结果。"""
-
-    model_config = ConfigDict(extra="forbid")
-
-    source: str
-    state: Literal["success", "failed", "skipped"]
-    result_count: int = Field(default=0, ge=0)
-    message: str = ""
-    elapsed_ms: int = Field(default=0, ge=0)
-
-
 class SearchResult(BaseModel):
-    """完整检索结果与可审计状态。"""
+    """完整检索结果。"""
 
     model_config = ConfigDict(extra="forbid")
 
     request: SearchRequest
     papers: list[Paper] = Field(default_factory=list)
-    source_statuses: list[SourceStatus] = Field(default_factory=list)
     query_plan: dict[str, object] = Field(default_factory=dict)
     total_candidates: int = Field(default=0, ge=0)

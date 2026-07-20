@@ -4,18 +4,18 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[1]
+REMOVED_REPORT_MARKERS = ("检索假设", "检索式", "论文网址", "数据源检索状态")
 
 
 APPROVED_PROMPT = """使用 $academic-paper-discovery，围绕“研究主题”进行多来源论文检索。
 
 要求：
-- 年份：未指定则明确说明默认范围
+- 年份：未指定时采用默认五年范围；默认五年范围保留在 JSON 的 `query_plan` 中；Markdown 报告不展示这些假设
 - 数量：20 篇
 - 优先来源：Nature、Science、相关子刊及本领域重要期刊和会议
 - 输出：必读、强相关、拓展阅读
 - 同时生成论文对比表
-- 将完整论文网址按表格序号列在表格后面
-- 说明实际检索成功和失败的数据源"""
+- 在表格中提供可点击的论文和开源代码链接"""
 
 
 def test_readme_contains_approved_prompt_and_no_download_policy() -> None:
@@ -29,6 +29,12 @@ def test_readme_contains_approved_prompt_and_no_download_policy() -> None:
     assert "如果你只是使用者，看到这里就够了" in readme
     assert "D:\\academic-paper-discovery" in development
     assert "--offline-fixture" in development
+    assert "数据源检索状态" not in readme
+    assert "论文网址" not in readme
+    assert (
+        "| 序号 | 分组 | 论文 | 作者 | 年份 | 期刊或会议 | 得分 | 推荐理由 | 论文链接 | 开源代码 |"
+        in readme
+    )
 
 
 def test_skill_frontmatter_and_body_are_ready_for_users() -> None:
@@ -51,6 +57,71 @@ def test_skill_frontmatter_and_body_are_ready_for_users() -> None:
     assert "多来源论文检索" in body
     assert "不下载论文正文或 PDF" in body
     assert "必读、强相关、拓展阅读" in body
+    assert "论文网址必须紧跟对比表" not in body
+    assert "逐项报告本次运行中真实“成功、失败、跳过”的数据源及原因" not in body
+
+
+def test_output_contract_uses_clickable_links_without_removed_sections() -> None:
+    output_contract = (ROOT / "references" / "output-contract.md").read_text(
+        encoding="utf-8"
+    )
+    report_template = (ROOT / "assets" / "report-template.md").read_text(
+        encoding="utf-8"
+    )
+
+    for required in ("论文链接", "开源代码", "[论文](URL)", "[代码](URL)"):
+        assert required in output_contract
+
+    headings = ["必读", "强相关", "拓展阅读", "论文对比表", "局限与下一步"]
+    assert [report_template.index(f"## {heading}") for heading in headings] == sorted(
+        report_template.index(f"## {heading}") for heading in headings
+    )
+    for removed in (f"## {section}" for section in REMOVED_REPORT_MARKERS):
+        assert removed not in report_template
+
+    for marker in REMOVED_REPORT_MARKERS:
+        assert marker not in output_contract
+        assert f"## {marker}" not in output_contract
+    assert "报告只生成上述五个固定章节。" in output_contract
+
+
+def test_skill_contains_only_the_approved_report_sections() -> None:
+    skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+    output_section = skill.split("### 5. 输出中文报告", maxsplit=1)[1].split(
+        "## 交付前检查", maxsplit=1
+    )[0]
+
+    for marker in REMOVED_REPORT_MARKERS:
+        assert marker not in output_section
+        assert f"## {marker}" not in output_section
+    assert "报告只生成上述五个固定章节。" in output_section
+
+
+def test_source_policy_keeps_failure_isolation_without_status_reporting() -> None:
+    source_policy = (ROOT / "references" / "source-policy.md").read_text(encoding="utf-8")
+
+    assert "任何来源失败都不应阻止已成功来源进入去重和排序" in source_policy
+    assert "状态" not in source_policy
+    for removed in ("## 状态定义", "成功：", "失败：", "跳过：", "报告必须保留失败原因"):
+        assert removed not in source_policy
+
+
+def test_development_doc_matches_the_report_and_source_policy_contract() -> None:
+    development = (ROOT / "docs" / "DEVELOPMENT.md").read_text(encoding="utf-8")
+
+    assert "`report.md`：恰好五个推荐/报告章节，以及一张十列的合并可点击链接表" in development
+    assert "`report.json`：请求、`query_plan`、论文、评分和元数据；不包含来源状态" in development
+    assert "单个来源失败会被静默隔离；报告只说明通用的覆盖局限" in development
+    assert "来源策略只描述来源边界与失败隔离，不定义来源状态" in development
+    for legacy_contract in ("数据源状态", "成功、失败、跳过", "状态定义"):
+        assert legacy_contract not in development
+
+
+def test_default_year_wording_keeps_assumptions_in_json_only() -> None:
+    expected = "默认五年范围保留在 JSON 的 `query_plan` 中；Markdown 报告不展示这些假设"
+
+    for path in (ROOT / "README.md", ROOT / "SKILL.md", ROOT / "docs" / "DEVELOPMENT.md"):
+        assert expected in path.read_text(encoding="utf-8")
 
 
 def test_agent_interface_is_chinese() -> None:

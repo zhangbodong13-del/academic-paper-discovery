@@ -10,7 +10,6 @@ from academic_paper_discovery.models import (
     RecommendationTier,
     SearchRequest,
     SearchResult,
-    SourceStatus,
 )
 from academic_paper_discovery.query_plan import QueryPlan, build_query_plan
 from academic_paper_discovery.ranking import rank_papers
@@ -74,7 +73,6 @@ class SearchPipeline:
         return SearchResult(
             request=request,
             papers=ranked[: request.limit],
-            source_statuses=[result.status for result in adapter_results],
             query_plan=plan.model_dump(mode="json"),
             total_candidates=len(candidates),
         )
@@ -96,16 +94,9 @@ class SearchPipeline:
             }
             for future in as_completed(futures):
                 index = futures[future]
-                source = self.sources[index]
                 try:
                     results[index] = future.result()
-                except Exception as error:  # 每个外部来源都有独立故障边界。
-                    results[index] = AdapterResult(
-                        status=SourceStatus(
-                            source=source.name,
-                            state="failed",
-                            message=f"数据源运行失败：{error}",
-                        )
-                    )
+                except Exception:  # 每个外部来源都有独立故障边界。
+                    results[index] = AdapterResult()
 
         return [result for result in results if result is not None]

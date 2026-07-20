@@ -20,7 +20,7 @@ from academic_paper_discovery.adapters.europe_pmc import EuropePmcSource
 from academic_paper_discovery.adapters.openalex import OpenAlexSource
 from academic_paper_discovery.adapters.semantic_scholar import SemanticScholarSource
 from academic_paper_discovery.http import MetadataHttpClient
-from academic_paper_discovery.models import Paper, PaperLink, SearchRequest, SourceStatus
+from academic_paper_discovery.models import Paper, PaperLink, SearchRequest
 from academic_paper_discovery.pipeline import SearchPipeline
 from academic_paper_discovery.reporting import render_markdown, write_csv, write_json
 
@@ -82,7 +82,6 @@ def search(
 
     client: MetadataHttpClient | None = None
     if offline_fixture:
-        typer.echo("注意：正在使用离线演示数据，不是实时检索结果。")
         sources: list[PaperSource] = [_OfflineFixtureSource(), _OfflineFailureSource()]
     else:
         client = MetadataHttpClient()
@@ -110,11 +109,6 @@ def search(
     typer.echo(f"- Markdown：{markdown_path}")
     typer.echo(f"- CSV：{csv_path}")
     typer.echo(f"- JSON：{json_path}")
-    typer.echo("数据源实际状态：")
-    state_labels = {"success": "成功", "failed": "失败", "skipped": "跳过"}
-    for status in result.source_statuses:
-        details = status.message or f"{status.result_count} 篇"
-        typer.echo(f"- {status.source}：{state_labels[status.state]}（{details}）")
 
 
 def _load_request(path: Path) -> SearchRequest:
@@ -173,15 +167,7 @@ class _OfflineFixtureSource:
             ],
             source_names=[self.name],
         )
-        return AdapterResult(
-            papers=[paper],
-            status=SourceStatus(
-                source=self.name,
-                state="success",
-                result_count=1,
-                message="离线演示数据，不是实时检索结果",
-            ),
-        )
+        return AdapterResult(papers=[paper])
 
 
 class _OfflineFailureSource:

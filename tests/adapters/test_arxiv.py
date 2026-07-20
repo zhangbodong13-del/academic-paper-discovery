@@ -64,7 +64,7 @@ def test_arxiv_parses_atom_and_ignores_pdf_link() -> None:
     assert [link.url for link in paper.links] == [
         "https://arxiv.org/abs/2401.12345v2"
     ]
-    assert result.status.state == "success"
+    assert len(result.papers) == 1
 
 
 @respx.mock

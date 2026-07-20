@@ -4,6 +4,7 @@ import respx
 
 from academic_paper_discovery.adapters.openalex import OpenAlexSource
 from academic_paper_discovery.adapters.semantic_scholar import SemanticScholarSource
+from academic_paper_discovery.adapters.base import AdapterResult
 from academic_paper_discovery.http import MetadataHttpClient
 from academic_paper_discovery.models import SearchRequest
 from academic_paper_discovery.query_plan import build_query_plan
@@ -21,14 +22,12 @@ def _request_and_plan():
 
 
 @pytest.mark.parametrize("source_type", [OpenAlexSource, SemanticScholarSource])
-def test_optional_source_skips_without_key(source_type) -> None:
+def test_optional_source_returns_empty_result_without_key(source_type) -> None:
     request, plan = _request_and_plan()
 
     result = source_type(client=None, api_key=None).search(plan, request)
 
-    assert result.papers == []
-    assert result.status.state == "skipped"
-    assert "API Key" in result.status.message
+    assert result == AdapterResult()
 
 
 @respx.mock

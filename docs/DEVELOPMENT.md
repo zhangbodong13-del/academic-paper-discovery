@@ -27,7 +27,7 @@ python -m venv .venv
 }
 ```
 
-未提供年份时，程序使用当前年份及之前四年的默认五年范围，并在报告中记录该假设。
+未提供年份时，程序使用当前年份及之前四年的默认五年范围。默认五年范围保留在 JSON 的 `query_plan` 中；Markdown 报告不展示这些假设。
 
 运行：
 
@@ -39,9 +39,9 @@ python -m venv .venv
 
 输出目录包含：
 
-- `report.md`：中文分层推荐、对比表、完整网址和数据源状态；
+- `report.md`：恰好五个推荐/报告章节，以及一张十列的合并可点击链接表；
 - `report.csv`：适合 Excel 的 UTF-8 BOM 表格；
-- `report.json`：完整请求、检索式、元数据、评分分项和来源状态。
+- `report.json`：请求、`query_plan`、论文、评分和元数据；不包含来源状态。
 
 `--offline-fixture` 只用于自动测试和功能演示。它会明确显示“不是实时检索结果”，不能用来生成正式文献报告。
 
@@ -51,7 +51,7 @@ python -m venv .venv
 - 可选增强：OpenAlex、Semantic Scholar，需要相应 API Key；
 - Codex 还可以按领域补充出版方官网、OpenReview、CVF Open Access 等网页来源。
 
-每个来源独立记录“成功、失败、跳过”状态。来源局部失败不会中断整个任务。
+单个来源失败会被静默隔离；报告只说明通用的覆盖局限。来源策略只描述来源边界与失败隔离，不定义来源状态。
 
 ## 运行测试
 
@@ -63,4 +63,4 @@ python -m venv .venv
 
 - `references/output-contract.md`：报告结构和网址格式；
 - `references/ranking-policy.md`：相关性排序规则；
-- `references/source-policy.md`：数据源与状态定义。
+- `references/source-policy.md`：来源边界与单个来源失败的隔离规则。

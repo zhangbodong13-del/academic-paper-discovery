@@ -62,5 +62,5 @@ def test_crossref_maps_publication_metadata_without_following_paper_links() -> N
     assert paper.abstract == "Tracks surgical tools."
     assert paper.doi == "10.1000/abc"
     assert paper.citation_count == 12
-    assert result.status.state == "success"
+    assert len(result.papers) == 1
     assert len(route.calls) == 1

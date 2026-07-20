@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from academic_paper_discovery.models import Paper, SearchRequest
+from academic_paper_discovery.models import Paper, SearchRequest, SearchResult
 
 
 def test_search_request_exposes_default_year_assumption() -> None:
@@ -49,3 +49,14 @@ def test_paper_normalizes_doi() -> None:
 def test_paper_rejects_empty_title() -> None:
     with pytest.raises(ValidationError):
         Paper(title="   ")
+
+
+def test_search_result_serialization_has_no_source_statuses() -> None:
+    request = SearchRequest.with_defaults(topic="robot autofocus", current_year=2026)
+    query_plan = {"original_topic": "robot autofocus"}
+    result = SearchResult(request=request, query_plan=query_plan)
+
+    payload = result.model_dump(mode="json")
+
+    assert "source_statuses" not in payload
+    assert payload["query_plan"] == query_plan
