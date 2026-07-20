@@ -1,0 +1,23 @@
+search:
+  default_year_window: 5
+  default_limit: 20
+  maximum_limit: 100
+  per_source_limit: 50
+  total_candidate_limit: 500
+
+deduplication:
+  fuzzy_title_threshold: 92
+  low_confidence_threshold: 86
+
+ranking:
+  must_read_threshold: 0.75
+  strong_threshold: 0.55
+  weights:
+    title_relevance: 0.35
+    abstract_relevance: 0.20
+    target_venue: 0.10
+    multi_source: 0.08
+    formal_version: 0.05
+    code_available: 0.05
+    recency: 0.04
+    citation_age_normalized: 0.13

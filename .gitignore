@@ -1,0 +1,13 @@
+.worktrees/
+.venv/
+.cache/
+outputs/
+.env
+__pycache__/
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+*.py[cod]

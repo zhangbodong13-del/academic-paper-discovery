@@ -1,0 +1,156 @@
+venues:
+  - canonical_name: Nature
+    aliases: [Nature]
+    type: journal
+    publisher: Springer Nature
+    family: Nature Portfolio
+    tier_label: 重点综合期刊
+    official_domains: [nature.com]
+    issn: [0028-0836, 1476-4687]
+  - canonical_name: Nature Methods
+    aliases: [Nature Methods, Nat Methods]
+    type: journal
+    publisher: Springer Nature
+    family: Nature Portfolio
+    tier_label: 重点领域期刊
+    official_domains: [nature.com]
+    issn: [1548-7091, 1548-7105]
+  - canonical_name: Nature Medicine
+    aliases: [Nature Medicine, Nat Med]
+    type: journal
+    publisher: Springer Nature
+    family: Nature Portfolio
+    tier_label: 重点领域期刊
+    official_domains: [nature.com]
+    issn: [1078-8956, 1546-170X]
+  - canonical_name: Nature Communications
+    aliases: [Nature Communications, Nat Commun]
+    type: journal
+    publisher: Springer Nature
+    family: Nature Portfolio
+    tier_label: 重点综合期刊
+    official_domains: [nature.com]
+    issn: [2041-1723]
+  - canonical_name: Science
+    aliases: [Science]
+    type: journal
+    publisher: AAAS
+    family: Science family
+    tier_label: 重点综合期刊
+    official_domains: [science.org]
+    issn: [0036-8075, 1095-9203]
+  - canonical_name: Science Advances
+    aliases: [Science Advances, Sci Adv]
+    type: journal
+    publisher: AAAS
+    family: Science family
+    tier_label: 重点综合期刊
+    official_domains: [science.org]
+    issn: [2375-2548]
+  - canonical_name: Science Robotics
+    aliases: [Science Robotics, Sci Robot]
+    type: journal
+    publisher: AAAS
+    family: Science family
+    tier_label: 重点领域期刊
+    official_domains: [science.org]
+    issn: [2470-9476]
+  - canonical_name: CVPR
+    aliases:
+      - CVPR
+      - Conference on Computer Vision and Pattern Recognition
+      - IEEE/CVF Conference on Computer Vision and Pattern Recognition
+    type: conference
+    publisher: IEEE/CVF
+    family: computer vision
+    tier_label: 重点领域会议
+    official_domains: [cvpr.thecvf.com, openaccess.thecvf.com]
+    issn: []
+  - canonical_name: ICCV
+    aliases: [ICCV, International Conference on Computer Vision]
+    type: conference
+    publisher: IEEE/CVF
+    family: computer vision
+    tier_label: 重点领域会议
+    official_domains: [iccv.thecvf.com, openaccess.thecvf.com]
+    issn: []
+  - canonical_name: ECCV
+    aliases: [ECCV, European Conference on Computer Vision]
+    type: conference
+    publisher: ECVA
+    family: computer vision
+    tier_label: 重点领域会议
+    official_domains: [eccv.ecva.net, ecva.net]
+    issn: []
+  - canonical_name: ICML
+    aliases: [ICML, International Conference on Machine Learning]
+    type: conference
+    publisher: PMLR
+    family: machine learning
+    tier_label: 重点领域会议
+    official_domains: [icml.cc, proceedings.mlr.press]
+    issn: []
+  - canonical_name: NeurIPS
+    aliases: [NeurIPS, NIPS, Neural Information Processing Systems]
+    type: conference
+    publisher: NeurIPS Foundation
+    family: machine learning
+    tier_label: 重点领域会议
+    official_domains: [neurips.cc, proceedings.neurips.cc]
+    issn: []
+  - canonical_name: ICLR
+    aliases: [ICLR, International Conference on Learning Representations]
+    type: conference
+    publisher: ICLR
+    family: machine learning
+    tier_label: 重点领域会议
+    official_domains: [iclr.cc, openreview.net]
+    issn: []
+  - canonical_name: IEEE Transactions on Robotics
+    aliases: [IEEE Transactions on Robotics, T-RO, TRO]
+    type: journal
+    publisher: IEEE
+    family: robotics
+    tier_label: 重点领域期刊
+    official_domains: [ieeexplore.ieee.org]
+    issn: [1552-3098, 1941-0468]
+  - canonical_name: IEEE Robotics and Automation Letters
+    aliases: [IEEE Robotics and Automation Letters, RA-L, RAL]
+    type: journal
+    publisher: IEEE
+    family: robotics
+    tier_label: 重点领域期刊
+    official_domains: [ieeexplore.ieee.org]
+    issn: [2377-3766]
+  - canonical_name: ICRA
+    aliases: [ICRA, IEEE International Conference on Robotics and Automation]
+    type: conference
+    publisher: IEEE
+    family: robotics
+    tier_label: 重点领域会议
+    official_domains: [ieee-icra.org, ieeexplore.ieee.org]
+    issn: []
+  - canonical_name: IROS
+    aliases: [IROS, IEEE/RSJ International Conference on Intelligent Robots and Systems]
+    type: conference
+    publisher: IEEE/RSJ
+    family: robotics
+    tier_label: 重点领域会议
+    official_domains: [ieee-iros.org, ieeexplore.ieee.org]
+    issn: []
+  - canonical_name: MICCAI
+    aliases: [MICCAI, Medical Image Computing and Computer Assisted Intervention]
+    type: conference
+    publisher: MICCAI Society
+    family: medical imaging
+    tier_label: 重点领域会议
+    official_domains: [miccai.org, link.springer.com]
+    issn: []
+  - canonical_name: IEEE Transactions on Medical Imaging
+    aliases: [IEEE Transactions on Medical Imaging, TMI, IEEE TMI]
+    type: journal
+    publisher: IEEE
+    family: medical imaging
+    tier_label: 重点领域期刊
+    official_domains: [ieeexplore.ieee.org]
+    issn: [0278-0062, 1558-254X]

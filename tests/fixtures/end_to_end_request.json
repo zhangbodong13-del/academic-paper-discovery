@@ -1,0 +1,8 @@
+{
+  "topic": "stereo surgical instrument pose estimation",
+  "year_from": 2022,
+  "year_to": 2026,
+  "limit": 20,
+  "source_limit": 3,
+  "target_venues": ["MICCAI", "IEEE Transactions on Medical Imaging"]
+}

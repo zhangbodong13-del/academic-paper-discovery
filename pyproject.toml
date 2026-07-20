@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "academic-paper-discovery"
+version = "0.1.0"
+description = "面向 Codex 的多来源学术论文发现与筛选工具"
+requires-python = ">=3.11"
+dependencies = [
+  "httpx>=0.28,<1",
+  "pydantic>=2.11,<3",
+  "PyYAML>=6.0,<7",
+  "rapidfuzz>=3.14,<4",
+  "typer>=0.16,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.4,<10",
+  "pytest-cov>=6.2,<8",
+  "respx>=0.22,<1",
+]
+
+[project.scripts]
+academic-paper-discovery = "academic_paper_discovery.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--strict-markers"

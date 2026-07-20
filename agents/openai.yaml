@@ -1,0 +1,4 @@
+interface:
+  display_name: "学术论文发现"
+  short_description: "跨来源查找、筛选并排序研究论文"
+  default_prompt: "使用 $academic-paper-discovery 查找与我的研究主题最相关的论文。"
