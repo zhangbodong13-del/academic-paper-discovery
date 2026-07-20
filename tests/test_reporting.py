@@ -1,5 +1,6 @@
 import csv
 import json
+from pathlib import Path
 
 import pytest
 
@@ -9,9 +10,17 @@ from academic_paper_discovery.models import (
     RecommendationTier,
     SearchRequest,
     SearchResult,
-    SourceStatus,
 )
-from academic_paper_discovery.reporting import render_markdown, write_csv, write_json
+from academic_paper_discovery.reporting import (
+    _code_url,
+    _primary_paper_url,
+    render_markdown,
+    write_csv,
+    write_json,
+)
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture
@@ -66,19 +75,6 @@ def sample_result() -> SearchResult:
                 why_read="用于拓展阅读",
             ),
         ],
-        source_statuses=[
-            SourceStatus(source="crossref", state="success", result_count=10),
-            SourceStatus(
-                source="openalex",
-                state="skipped",
-                message="未配置 API Key",
-            ),
-            SourceStatus(
-                source="arxiv",
-                state="failed",
-                message="请求超时",
-            ),
-        ],
         query_plan={
             "original_topic": "机器人显微镜自动对焦",
             "queries": ["机器人显微镜自动对焦", "robot microscope autofocus"],
@@ -92,53 +88,66 @@ def sample_result() -> SearchResult:
     )
 
 
-def test_markdown_follows_b_plus_c_contract(sample_result: SearchResult) -> None:
+def test_markdown_has_only_requested_sections_in_order(
+    sample_result: SearchResult,
+) -> None:
     report = render_markdown(sample_result)
 
     headings = [
-        "## 检索假设",
-        "## 检索式",
         "## 必读",
         "## 强相关",
         "## 拓展阅读",
         "## 论文对比表",
-        "## 论文网址",
-        "## 数据源检索状态",
         "## 局限与下一步",
     ]
-    positions = [report.index(heading) for heading in headings]
-    assert positions == sorted(positions)
-    assert report.index("| 序号 |") < report.index("## 论文网址")
+    assert [report.index(heading) for heading in headings] == sorted(
+        report.index(heading) for heading in headings
+    )
+    for removed in ("## 检索假设", "## 检索式", "## 论文网址", "## 数据源检索状态"):
+        assert removed not in report
     assert "Paper \\| One" in report
     assert report.count("| 1 |") == 1
     assert report.count("| 2 |") == 1
     assert report.count("| 3 |") == 1
     assert "未核验" in report
-    assert "未找到" in report
 
 
-def test_urls_follow_table_with_matching_numbers(sample_result: SearchResult) -> None:
-    report = render_markdown(sample_result)
-    url_section = report.split("## 论文网址", maxsplit=1)[1].split(
-        "## 数据源检索状态", maxsplit=1
-    )[0]
-
-    assert "1. **Paper | One**" in url_section
-    assert "2. **Paper Two**" in url_section
-    assert "3. **Paper Three**" in url_section
-    assert "https://example.org/paper/one?full=true" in url_section
-    assert "https://github.com/example/paper-one" in url_section
-    assert "https://doi.org/10.1000/two" in url_section
-    assert url_section.index("1. **Paper | One**") < url_section.index("2. **Paper Two**")
-    assert url_section.index("2. **Paper Two**") < url_section.index("3. **Paper Three**")
-
-
-def test_source_states_are_reported_as_actual_outcomes(sample_result: SearchResult) -> None:
+def test_table_contains_clickable_paper_and_code_links(sample_result: SearchResult) -> None:
     report = render_markdown(sample_result)
 
-    assert "crossref：成功（10 篇）" in report
-    assert "openalex：跳过（未配置 API Key）" in report
-    assert "arxiv：失败（请求超时）" in report
+    assert "| 论文链接 | 开源代码 |" in report
+    assert "[论文](https://doi.org/10.1000/one)" in report
+    assert "[代码](https://github.com/example/paper-one)" in report
+    assert report.count("未找到") >= 1
+
+
+def test_code_link_detection_and_primary_link_excludes_code_links() -> None:
+    paper = Paper(
+        title="Code host fallback",
+        links=[
+            PaperLink(kind="repository", url="https://gitlab.com/example/project"),
+            PaperLink(kind="publisher", url="https://example.org/paper"),
+        ],
+    )
+
+    assert _code_url(paper) == "https://gitlab.com/example/project"
+    assert _primary_paper_url(paper) == "https://example.org/paper"
+
+
+def test_code_host_in_a_paper_path_is_not_treated_as_a_code_link() -> None:
+    paper = Paper(
+        title="Host text in path",
+        links=[
+            PaperLink(
+                kind="publisher",
+                url="https://example.org/articles/github.com-study",
+            ),
+            PaperLink(kind="repository", url="https://GitLab.com/example/project"),
+        ],
+    )
+
+    assert _code_url(paper) == "https://GitLab.com/example/project"
+    assert _primary_paper_url(paper) == "https://example.org/articles/github.com-study"
 
 
 def test_csv_and_json_outputs_are_machine_readable(
@@ -156,7 +165,19 @@ def test_csv_and_json_outputs_are_machine_readable(
     payload = json.loads(json_path.read_text(encoding="utf-8"))
 
     assert [row["序号"] for row in rows] == ["1", "2", "3"]
-    assert rows[0]["完整网址"].startswith("https://doi.org/10.1000/one")
+    assert rows[0]["论文链接"] == "https://doi.org/10.1000/one"
+    assert rows[0]["开源代码"] == "https://github.com/example/paper-one"
+    assert rows[2]["论文链接"] == "未找到"
+    assert rows[2]["开源代码"] == "未找到"
     assert rows[2]["年份"] == "未核验"
     assert payload["request"]["topic"] == "机器人显微镜自动对焦"
-    assert payload["source_statuses"][2]["state"] == "failed"
+    assert "source_statuses" not in payload
+    assert "query_plan" in payload
+
+
+def test_reporting_module_has_no_legacy_source_status_compatibility() -> None:
+    reporting_source = (ROOT / "src" / "academic_paper_discovery" / "reporting.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "source_statuses" not in reporting_source

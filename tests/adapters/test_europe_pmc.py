@@ -67,5 +67,5 @@ def test_europe_pmc_maps_core_metadata_and_year_query() -> None:
     assert paper.raw_ids["pmid"] == "12345678"
     assert paper.citation_count == 7
     assert paper.abstract == "Estimates tool pose from stereo images."
-    assert result.status.result_count == 1
+    assert len(result.papers) == 1
     assert len(route.calls) == 1

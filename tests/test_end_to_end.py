@@ -163,19 +163,16 @@ def test_four_source_end_to_end_report_never_downloads_full_text(tmp_path) -> No
     assert len(result.papers) == 4
     merged = next(paper for paper in result.papers if paper.doi == "10.1000/stereo-pose")
     assert merged.source_names == ["Crossref", "arXiv"]
-    assert [status.source for status in result.source_statuses] == [
-        "Crossref",
-        "Europe PMC",
-        "arXiv",
-        "DBLP",
-    ]
-    assert all(status.state == "success" for status in result.source_statuses)
     assert len(result.papers) <= 20
 
     report = (output / "report.md").read_text(encoding="utf-8")
+    payload = json.loads((output / "report.json").read_text(encoding="utf-8"))
+    assert "source_statuses" not in payload
     assert report.index("## 必读") < report.index("## 强相关")
     assert report.index("## 强相关") < report.index("## 拓展阅读")
-    assert report.index("## 论文对比表") < report.index("## 论文网址")
+    assert "## 论文网址" not in report
+    assert "## 数据源检索状态" not in report
+    assert "| 论文链接 | 开源代码 |" in report
     assert "本次检索未筛选出该层级论文。" in report
 
     generated_files = [path for path in output.rglob("*") if path.is_file()]

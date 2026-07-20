@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import json
-import time
 from typing import Any
 
 from academic_paper_discovery.adapters.base import AdapterResult
 from academic_paper_discovery.http import MetadataHttpClient
-from academic_paper_discovery.models import Paper, PaperLink, SearchRequest, SourceStatus
+from academic_paper_discovery.models import Paper, PaperLink, SearchRequest
 from academic_paper_discovery.query_plan import QueryPlan
 
 
@@ -28,24 +27,9 @@ class OpenAlexSource:
         self.api_key = api_key.strip() if api_key else None
 
     def search(self, plan: QueryPlan, request: SearchRequest) -> AdapterResult:
-        if not self.api_key:
-            return AdapterResult(
-                status=SourceStatus(
-                    source=self.name,
-                    state="skipped",
-                    message="未配置 OpenAlex API Key，已跳过可选增强来源",
-                )
-            )
-        if self.client is None:
-            return AdapterResult(
-                status=SourceStatus(
-                    source=self.name,
-                    state="failed",
-                    message="OpenAlex HTTP 客户端未配置",
-                )
-            )
+        if not self.api_key or self.client is None:
+            return AdapterResult()
 
-        started = time.perf_counter()
         papers: list[Paper] = []
         try:
             for query in plan.queries:
@@ -69,10 +53,10 @@ class OpenAlexSource:
                     self._map_work(work)
                     for work in document.get("results", [])[:remaining]
                 )
-        except Exception as exc:
-            return _status_result(self.name, "failed", papers, started, str(exc))
+        except Exception:
+            return AdapterResult(papers=papers)
 
-        return _status_result(self.name, "success", papers, started, "元数据检索完成")
+        return AdapterResult(papers=papers)
 
     def _map_work(self, work: dict[str, Any]) -> Paper:
         location = work.get("primary_location") or {}
@@ -125,22 +109,3 @@ def _to_int(value: object) -> int | None:
     except (TypeError, ValueError):
         return None
     return number if number >= 0 else None
-
-
-def _status_result(
-    source: str,
-    state: str,
-    papers: list[Paper],
-    started: float,
-    message: str,
-) -> AdapterResult:
-    return AdapterResult(
-        papers=papers,
-        status=SourceStatus(
-            source=source,
-            state=state,  # type: ignore[arg-type]
-            result_count=len(papers),
-            message=f"{source} {message}",
-            elapsed_ms=max(0, int((time.perf_counter() - started) * 1000)),
-        ),
-    )

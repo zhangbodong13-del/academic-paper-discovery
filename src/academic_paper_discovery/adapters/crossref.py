@@ -5,12 +5,11 @@ from __future__ import annotations
 import html
 import json
 import re
-import time
 from typing import Any
 
 from academic_paper_discovery.adapters.base import AdapterResult
 from academic_paper_discovery.http import MetadataHttpClient
-from academic_paper_discovery.models import Paper, PaperLink, SearchRequest, SourceStatus
+from academic_paper_discovery.models import Paper, PaperLink, SearchRequest
 from academic_paper_discovery.query_plan import QueryPlan
 
 
@@ -25,7 +24,6 @@ class CrossrefSource:
         self.mailto = mailto.strip() if mailto else None
 
     def search(self, plan: QueryPlan, request: SearchRequest) -> AdapterResult:
-        started = time.perf_counter()
         papers: list[Paper] = []
         try:
             for query in plan.queries:
@@ -55,28 +53,10 @@ class CrossrefSource:
                 document = json.loads(payload.body)
                 items = document.get("message", {}).get("items", [])
                 papers.extend(self._map_item(item) for item in items[:remaining])
-        except Exception as exc:
-            return AdapterResult(
-                papers=papers,
-                status=SourceStatus(
-                    source=self.name,
-                    state="failed",
-                    result_count=len(papers),
-                    message=f"Crossref 元数据请求失败：{exc}",
-                    elapsed_ms=_elapsed_ms(started),
-                ),
-            )
+        except Exception:
+            return AdapterResult(papers=papers)
 
-        return AdapterResult(
-            papers=papers,
-            status=SourceStatus(
-                source=self.name,
-                state="success",
-                result_count=len(papers),
-                message="Crossref 元数据检索完成",
-                elapsed_ms=_elapsed_ms(started),
-            ),
-        )
+        return AdapterResult(papers=papers)
 
     def _map_item(self, item: dict[str, Any]) -> Paper:
         doi = item.get("DOI")
@@ -150,7 +130,3 @@ def _nonnegative_int(value: object) -> int | None:
     except (TypeError, ValueError):
         return None
     return number if number >= 0 else None
-
-
-def _elapsed_ms(started: float) -> int:
-    return max(0, int((time.perf_counter() - started) * 1000))

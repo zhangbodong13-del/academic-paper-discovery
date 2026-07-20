@@ -6,17 +6,16 @@ from typing import Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from academic_paper_discovery.models import Paper, SearchRequest, SourceStatus
+from academic_paper_discovery.models import Paper, SearchRequest
 from academic_paper_discovery.query_plan import QueryPlan
 
 
 class AdapterResult(BaseModel):
-    """单一来源返回的论文和运行状态。"""
+    """单一来源返回的论文元数据。"""
 
     model_config = ConfigDict(extra="forbid")
 
     papers: list[Paper] = Field(default_factory=list)
-    status: SourceStatus
 
 
 class PaperSource(Protocol):

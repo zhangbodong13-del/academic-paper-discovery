@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-import time
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
+from time import sleep as _default_sleep
 
 from academic_paper_discovery.adapters.base import AdapterResult
 from academic_paper_discovery.http import MetadataHttpClient
-from academic_paper_discovery.models import Paper, PaperLink, SearchRequest, SourceStatus
+from academic_paper_discovery.models import Paper, PaperLink, SearchRequest
 from academic_paper_discovery.query_plan import QueryPlan
 
 
@@ -29,13 +29,12 @@ class ArxivSource:
         self,
         *,
         client: MetadataHttpClient,
-        sleep: Callable[[float], None] = time.sleep,
+        sleep: Callable[[float], None] = _default_sleep,
     ) -> None:
         self.client = client
         self.sleep = sleep
 
     def search(self, plan: QueryPlan, request: SearchRequest) -> AdapterResult:
-        started = time.perf_counter()
         papers: list[Paper] = []
         request_count = 0
         try:
@@ -63,28 +62,10 @@ class ArxivSource:
                         break
                 if len(papers) >= request.source_limit:
                     break
-        except Exception as exc:
-            return AdapterResult(
-                papers=papers,
-                status=SourceStatus(
-                    source=self.name,
-                    state="failed",
-                    result_count=len(papers),
-                    message=f"arXiv 元数据请求失败：{exc}",
-                    elapsed_ms=_elapsed_ms(started),
-                ),
-            )
+        except Exception:
+            return AdapterResult(papers=papers)
 
-        return AdapterResult(
-            papers=papers,
-            status=SourceStatus(
-                source=self.name,
-                state="success",
-                result_count=len(papers),
-                message="arXiv 元数据检索完成",
-                elapsed_ms=_elapsed_ms(started),
-            ),
-        )
+        return AdapterResult(papers=papers)
 
     def _map_entry(self, entry: ET.Element) -> Paper:
         identifier_url = _element_text(entry.find("atom:id", _NS))
@@ -152,7 +133,3 @@ def _year_from_iso(value: str | None) -> int | None:
     if value and len(value) >= 4 and value[:4].isdigit():
         return int(value[:4])
     return None
-
-
-def _elapsed_ms(started: float) -> int:
-    return max(0, int((time.perf_counter() - started) * 1000))

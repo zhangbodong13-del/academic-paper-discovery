@@ -4,17 +4,20 @@ import respx
 
 from academic_paper_discovery.adapters.base import AdapterResult
 from academic_paper_discovery.http import MetadataHttpClient, MetadataOnlyError
-from academic_paper_discovery.models import Paper, SourceStatus
+from academic_paper_discovery.models import Paper
 
 
-def test_adapter_result_keeps_papers_and_status_together() -> None:
-    result = AdapterResult(
-        papers=[Paper(title="A Study")],
-        status=SourceStatus(source="fixture", state="success", result_count=1),
-    )
+def test_adapter_result_contains_only_papers() -> None:
+    result = AdapterResult(papers=[Paper(title="A Study")])
 
     assert result.papers[0].title == "A Study"
-    assert result.status.result_count == 1
+    assert result.model_dump() == {
+        "papers": [
+            {
+                **result.papers[0].model_dump(),
+            }
+        ]
+    }
 
 
 @respx.mock
