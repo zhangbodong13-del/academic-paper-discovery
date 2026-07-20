@@ -1,7 +1,5 @@
 # 学术论文检索 Skill
 
-告诉 Codex 一个研究主题，它会帮你从多个来源查找论文，筛出值得读的内容，并整理成中文报告。
-
 它只提供论文信息和网页链接，**不下载论文正文或 PDF**。
 
 ## 这个 Skill 能做什么
@@ -15,7 +13,7 @@
 
 ## 安装
 
-如果 Codex 还不能识别 `$academic-paper-discovery`，可以在 Codex 中输入：
+如果 还不能识别 `$academic-paper-discovery`，可以输入：
 
 ```text
 使用 $skill-installer 安装这个 GitHub Skill：
