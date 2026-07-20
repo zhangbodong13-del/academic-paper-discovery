@@ -1,12 +1,32 @@
-# 学术论文发现 Skill
+# 学术论文检索 Skill
 
-`academic-paper-discovery` 是一个面向 Codex 的中文多来源论文发现 Skill。它把中英文检索式、元数据聚合、版本去重、透明排序和 B+C 中文报告组织成一条可审计流程。
+告诉 Codex 一个研究主题，它会帮你从多个来源查找论文，筛出值得读的内容，并整理成中文报告。
 
-本项目只获取论文元数据和公开网页链接，**不下载论文正文或 PDF**。结果受检索式、年份、数据源覆盖和服务状态影响，不应表述为穷尽性检索。
+它只提供论文信息和网页链接，**不下载论文正文或 PDF**。
 
-## 快速使用
+## 这个 Skill 能做什么
 
-把下面这段提示词中的“研究主题”替换成你的主题：
+- 从多个学术来源查找论文；
+- 默认推荐 20 篇，未指定年份时会说明默认年份范围；
+- 把论文分成“必读、强相关、拓展阅读”；
+- 生成一张论文对比表；
+- 把每篇论文的完整网址按表格序号列在表格后面；
+- 告诉你哪些数据源检索成功、失败或被跳过。
+
+## 安装
+
+如果 Codex 还不能识别 `$academic-paper-discovery`，可以在 Codex 中输入：
+
+```text
+使用 $skill-installer 安装这个 GitHub Skill：
+https://github.com/zhangbodong13-del/academic-paper-discovery
+```
+
+如果已经可以使用 `$academic-paper-discovery`，直接看下一节。
+
+## 最简单的使用方法
+
+复制下面的内容，把“研究主题”换成你真正想查的主题：
 
 ```text
 使用 $academic-paper-discovery，围绕“研究主题”进行多来源论文检索。
@@ -21,65 +41,49 @@
 - 说明实际检索成功和失败的数据源
 ```
 
-示例：
+例如：
 
 ```text
-使用 $academic-paper-discovery，检索 2022–2026 年机器人显微自动对焦论文，优先综述和开源代码。
+使用 $academic-paper-discovery，检索 2022—2026 年机器人显微镜自动对焦论文，优先推荐综述和带开源代码的工作。
 ```
 
-## D 盘安装
+## 你会得到什么
 
-下面的示例把项目、虚拟环境、缓存、请求和输出都放在 D 盘：
+报告会先解释推荐理由，再给出统一表格：
 
-```powershell
-Set-Location D:\academic-paper-discovery
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[dev]" --cache-dir D:\academic-paper-discovery\.cache\pip
+```text
+必读
+1. 论文 A —— 与研究主题直接相关，方法具有代表性
+
+强相关
+2. 论文 B —— 提供重要的对比方法
+
+拓展阅读
+3. 论文 C —— 可用于了解相邻研究方向
+
+论文对比表
+| 序号 | 标题 | 年份 | 期刊/会议 | 推荐理由 |
+| 1 | 论文 A | 2025 | Nature Methods | ... |
+
+论文网址
+1. 论文 A
+   https://doi.org/...
+
+数据源检索状态
+- Crossref：成功
+- arXiv：成功
+- OpenAlex：跳过（未配置 API Key）
 ```
 
-可选 Key 放入当前终端环境或参照 `.env.example` 配置。免 Key 基础来源不依赖这些变量。
+其中的论文名称和网址都来自实际检索，不会使用上面的示例内容冒充真实结果。
 
-## 命令行使用
+## 使用时需要知道
 
-创建 `D:\academic-paper-discovery\requests\request.json`：
+- 检索结果受关键词、年份和数据源覆盖范围影响，不能保证包含世界上所有论文；
+- 某个数据源失败时，其他来源仍会继续检索；
+- 缺少作者、年份、DOI 或网址时，会写“未核验”或“未找到”，不会猜测；
+- 论文引用前，建议打开 DOI 或出版方网页再次确认。
 
-```json
-{
-  "topic": "机器人显微镜自动对焦",
-  "expanded_queries": ["robot microscope autofocus"],
-  "limit": 20,
-  "target_venues": ["Nature Methods", "IEEE Transactions on Robotics"]
-}
-```
+**如果你只是使用者，看到这里就够了。**
 
-未提供年份时，程序使用“当前年份及之前四年”的默认五年范围，并在报告中明确记录。运行：
-
-```powershell
-.\.venv\Scripts\academic-paper-discovery.exe search `
-  --request D:\academic-paper-discovery\requests\request.json `
-  --output D:\academic-paper-discovery\outputs\robot-autofocus
-```
-
-输出目录包含：
-
-- `report.md`：必读、强相关、拓展阅读、对比表、表后完整网址、数据源状态与局限；
-- `report.csv`：适合 Excel 的 UTF-8 BOM 表格；
-- `report.json`：完整请求、检索式、元数据、评分分项和来源状态。
-
-`--offline-fixture` 仅供测试和演示，会明确显示“不是实时检索结果”，不能用作正式文献检索。
-
-## 数据源
-
-- 默认免 Key：Crossref、Europe PMC、arXiv、DBLP；
-- 可选增强：OpenAlex、Semantic Scholar，需要相应 API Key；
-- Codex 可按研究领域补充出版方官网、OpenReview、CVF Open Access 等网页检索，并把补充来源的真实成功或失败状态写入报告。
-
-来源某次失败不会中断其他来源。最终报告逐项显示实际“成功、失败、跳过”状态，不能把未调用来源写成成功。
-
-## 开发验证
-
-```powershell
-.\.venv\Scripts\python.exe -m pytest -q
-```
-
-更详细的输出、排序和来源规则见 `references/output-contract.md`、`references/ranking-policy.md`、`references/source-policy.md`。
+开发者需要的 D 盘安装、命令行、JSON 请求和测试说明见 [开发文档](docs/DEVELOPMENT.md)。

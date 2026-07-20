@@ -20,10 +20,15 @@ APPROVED_PROMPT = """使用 $academic-paper-discovery，围绕“研究主题”
 
 def test_readme_contains_approved_prompt_and_no_download_policy() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    development = (ROOT / "docs" / "DEVELOPMENT.md").read_text(encoding="utf-8")
 
     assert APPROVED_PROMPT in readme
     assert "不下载论文正文或 PDF" in readme
-    assert "D:\\academic-paper-discovery" in readme
+    assert "## 这个 Skill 能做什么" in readme
+    assert "## 最简单的使用方法" in readme
+    assert "如果你只是使用者，看到这里就够了" in readme
+    assert "D:\\academic-paper-discovery" in development
+    assert "--offline-fixture" in development
 
 
 def test_skill_frontmatter_and_body_are_ready_for_users() -> None:
