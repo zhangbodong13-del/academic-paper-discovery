@@ -91,3 +91,29 @@ def test_invalid_request_returns_nonzero_with_chinese_error(
 
     assert result.exit_code != 0
     assert "请求文件无效" in result.stdout
+def test_build_pipeline_uses_remote_impact_url_from_environment(
+    monkeypatch,
+) -> None:
+    from academic_paper_discovery.cli import _build_pipeline
+    from academic_paper_discovery.http import MetadataHttpClient
+    from academic_paper_discovery.impact import RemoteImpactLookup
+
+    monkeypatch.setenv(
+        "IMPACT_METRICS_URL",
+        "https://example.org/impact_metrics.json",
+    )
+
+    with MetadataHttpClient(retries=0) as client:
+        pipeline = _build_pipeline(
+            [],
+            current_year=2026,
+            client=client,
+        )
+
+    assert isinstance(
+        pipeline.impact_online_lookup,
+        RemoteImpactLookup,
+    )
+    assert pipeline.impact_online_lookup.url == (
+        "https://example.org/impact_metrics.json"
+    )    

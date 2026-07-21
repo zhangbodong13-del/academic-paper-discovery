@@ -9,6 +9,7 @@ from academic_paper_discovery.adapters.base import AdapterResult, PaperSource
 from academic_paper_discovery.deduplication import deduplicate
 from academic_paper_discovery.enrichment import extract_innovation
 from academic_paper_discovery.impact import (
+    OnlineLookup,
     load_bundled_metrics,
     resolve_impact_metric,
 )
@@ -34,6 +35,7 @@ class SearchPipeline:
         fuzzy_threshold: int = 92,
         low_confidence_threshold: int = 86,
         impact_metrics: Mapping[str, str] | None = None,
+        impact_online_lookup: OnlineLookup | None = None,
     ) -> None:
         if total_candidate_limit < 1:
             raise ValueError("候选论文总上限必须大于零")
@@ -47,11 +49,13 @@ class SearchPipeline:
         self.max_workers = max_workers
         self.fuzzy_threshold = fuzzy_threshold
         self.low_confidence_threshold = low_confidence_threshold
+
         self.impact_metrics = (
-    load_bundled_metrics()
-    if impact_metrics is None
-    else dict(impact_metrics)
-)
+            load_bundled_metrics()
+            if impact_metrics is None
+            else dict(impact_metrics)
+        )
+        self.impact_online_lookup = impact_online_lookup
 
     def run(self, request: SearchRequest) -> SearchResult:
         """执行检索；单个来源失败不会中断整次任务。"""
@@ -88,12 +92,15 @@ class SearchPipeline:
 
         for paper in ranked:
             if paper.innovation == "未核验":
-                paper.innovation = extract_innovation(paper.abstract)
+                paper.innovation = extract_innovation(
+                    paper.abstract
+                )
 
             if paper.impact_metric == "未核验":
                 paper.impact_metric = resolve_impact_metric(
                     paper.venue,
                     local_metrics=self.impact_metrics,
+                    online_lookup=self.impact_online_lookup,
                 )
 
         if request.high_relevance_only:
@@ -130,10 +137,7 @@ class SearchPipeline:
         with ThreadPoolExecutor(
             max_workers=worker_count
         ) as executor:
-            futures: dict[
-                Future[AdapterResult],
-                int,
-            ] = {
+            futures: dict[Future[AdapterResult], int] = {
                 executor.submit(
                     source.search,
                     plan,
@@ -148,7 +152,6 @@ class SearchPipeline:
                 try:
                     results[index] = future.result()
                 except Exception:
-                    # 每个外部来源都有独立故障边界。
                     results[index] = AdapterResult()
 
         return [

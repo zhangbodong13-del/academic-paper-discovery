@@ -67,4 +67,33 @@ def test_loads_local_metrics_from_json(tmp_path) -> None:
     assert load_local_metrics(config_path) == {
         "Nature Methods": "IF 25.8（2025 JCR）",
         "CVPR": "CCF A（2022版）/ CORE A*（2023版）",
-    }    
+    }  
+def test_remote_lookup_fetches_verified_json_once() -> None:
+    import httpx
+    import respx
+
+    from academic_paper_discovery.http import MetadataHttpClient
+    from academic_paper_discovery.impact import RemoteImpactLookup
+
+    metrics_url = "https://example.org/impact_metrics.json"
+
+    with respx.mock:
+        route = respx.get(metrics_url).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "Unknown Journal": "IF 8.2（2025 JCR）",
+                },
+            )
+        )
+
+        with MetadataHttpClient(retries=0) as client:
+            lookup = RemoteImpactLookup(
+                client=client,
+                url=metrics_url,
+            )
+
+            assert lookup("Unknown Journal") == "IF 8.2（2025 JCR）"
+            assert lookup("  unknown   journal  ") == "IF 8.2（2025 JCR）"
+
+        assert route.call_count == 1      

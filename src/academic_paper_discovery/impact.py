@@ -6,7 +6,7 @@ import re
 from collections.abc import Callable, Mapping
 from importlib import resources
 from pathlib import Path
-
+from academic_paper_discovery.http import MetadataHttpClient
 
 OnlineLookup = Callable[[str], str | None]
 
@@ -91,3 +91,52 @@ def resolve_impact_metric(
             return online_metric.strip()
 
     return "未核验"
+class RemoteImpactLookup:
+    """从远程 JSON 指标表查询场所影响力，并缓存首次响应。"""
+
+    def __init__(
+        self,
+        *,
+        client: MetadataHttpClient,
+        url: str,
+    ) -> None:
+        cleaned_url = url.strip()
+
+        if not cleaned_url:
+            raise ValueError("远程影响力指标 URL 不能为空")
+
+        self.client = client
+        self.url = cleaned_url
+        self._metrics: dict[str, str] | None = None
+
+    def __call__(self, venue: str) -> str | None:
+        if self._metrics is None:
+            self._metrics = self._load_metrics()
+
+        normalized_venue = _normalize_venue(venue)
+
+        for remote_venue, metric in self._metrics.items():
+            if _normalize_venue(remote_venue) == normalized_venue:
+                cleaned_metric = metric.strip()
+                return cleaned_metric or None
+
+        return None
+
+    def _load_metrics(self) -> dict[str, str]:
+        payload = self.client.get(self.url)
+        data = json.loads(payload.body)
+
+        if not isinstance(data, dict):
+            raise ValueError("远程影响力指标必须是 JSON 对象")
+
+        metrics: dict[str, str] = {}
+
+        for venue, metric in data.items():
+            if not isinstance(venue, str) or not isinstance(metric, str):
+                raise ValueError(
+                    "远程影响力指标的场所名称和值必须是字符串"
+                )
+
+            metrics[venue] = metric
+
+        return metrics

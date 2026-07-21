@@ -18,8 +18,11 @@ from academic_paper_discovery.adapters.crossref import CrossrefSource
 from academic_paper_discovery.adapters.dblp import DblpSource
 from academic_paper_discovery.adapters.europe_pmc import EuropePmcSource
 from academic_paper_discovery.adapters.openalex import OpenAlexSource
-from academic_paper_discovery.adapters.semantic_scholar import SemanticScholarSource
+from academic_paper_discovery.adapters.semantic_scholar import (
+    SemanticScholarSource,
+)
 from academic_paper_discovery.http import MetadataHttpClient
+from academic_paper_discovery.impact import RemoteImpactLookup
 from academic_paper_discovery.models import Paper, PaperLink, SearchRequest
 from academic_paper_discovery.pipeline import SearchPipeline
 from academic_paper_discovery.reporting import render_markdown
@@ -97,10 +100,12 @@ def search(
         sources = _build_live_sources(client)
 
     try:
-        result = SearchPipeline(
+        pipeline = _build_pipeline(
             sources,
             current_year=date.today().year,
-        ).run(search_request)
+            client=client,
+        )
+        result = pipeline.run(search_request)
     finally:
         if client is not None:
             client.close()
@@ -112,7 +117,6 @@ def search(
         )
 
         markdown_path = output / "report.md"
-
         markdown_path.write_text(
             render_markdown(result),
             encoding="utf-8",
@@ -124,38 +128,92 @@ def search(
     typer.echo("检索完成，已生成：")
     typer.echo(f"- Markdown：{markdown_path}")
 
+
+def _build_pipeline(
+    sources: list[PaperSource],
+    *,
+    current_year: int,
+    client: MetadataHttpClient | None = None,
+) -> SearchPipeline:
+    """根据环境变量配置论文检索管线。"""
+
+    impact_online_lookup = None
+
+    impact_url = os.environ.get(
+        "IMPACT_METRICS_URL",
+        "",
+    ).strip()
+
+    if impact_url and client is not None:
+        impact_online_lookup = RemoteImpactLookup(
+            client=client,
+            url=impact_url,
+        )
+
+    return SearchPipeline(
+        sources,
+        current_year=current_year,
+        impact_online_lookup=impact_online_lookup,
+    )
+
+
 def _load_request(path: Path) -> SearchRequest:
-    payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    payload = json.loads(
+        path.read_text(encoding="utf-8-sig")
+    )
+
     if not isinstance(payload, dict):
         raise ValueError("请求 JSON 顶层必须是对象")
+
     values = dict(payload)
     topic = values.pop("topic", None)
+
     if not isinstance(topic, str) or not topic.strip():
         raise ValueError("缺少非空字符串字段 topic")
 
     has_year_from = "year_from" in values
     has_year_to = "year_to" in values
+
     if not has_year_from and not has_year_to:
         return SearchRequest.with_defaults(
             topic=topic,
             current_year=date.today().year,
             **values,
         )
+
     if has_year_from != has_year_to:
-        raise ValueError("year_from 和 year_to 必须同时提供")
-    return SearchRequest.model_validate({"topic": topic, **values})
+        raise ValueError(
+            "year_from 和 year_to 必须同时提供"
+        )
+
+    return SearchRequest.model_validate(
+        {
+            "topic": topic,
+            **values,
+        }
+    )
 
 
-def _build_live_sources(client: MetadataHttpClient) -> list[PaperSource]:
+def _build_live_sources(
+    client: MetadataHttpClient,
+) -> list[PaperSource]:
     return [
-        CrossrefSource(client=client, mailto=os.environ.get("CROSSREF_MAILTO")),
+        CrossrefSource(
+            client=client,
+            mailto=os.environ.get("CROSSREF_MAILTO"),
+        ),
         EuropePmcSource(client=client),
         ArxivSource(client=client),
         DblpSource(client=client),
-        OpenAlexSource(client=client, api_key=os.environ.get("OPENALEX_API_KEY")),
+        OpenAlexSource(
+            client=client,
+            api_key=os.environ.get("OPENALEX_API_KEY"),
+        ),
         SemanticScholarSource(
             client=client,
-            api_key=os.environ.get("SEMANTIC_SCHOLAR_API_KEY"),
+            api_key=os.environ.get(
+                "SEMANTIC_SCHOLAR_API_KEY"
+            ),
         ),
     ]
 
@@ -163,13 +221,20 @@ def _build_live_sources(client: MetadataHttpClient) -> list[PaperSource]:
 class _OfflineFixtureSource:
     name = "offline-fixture"
 
-    def search(self, plan, request) -> AdapterResult:
+    def search(
+        self,
+        plan,
+        request,
+    ) -> AdapterResult:
         paper = Paper(
             title=f"{request.topic}：离线示例论文",
             authors=["示例作者"],
             year=request.year_to,
             venue="示例期刊",
-            abstract=f"用于演示 {request.topic} 检索报告的本地元数据。",
+            abstract=(
+                f"本文提出一种用于演示 "
+                f"{request.topic} 检索报告的本地方法。"
+            ),
             doi="10.0000/offline-demo",
             links=[
                 PaperLink(
@@ -180,11 +245,18 @@ class _OfflineFixtureSource:
             ],
             source_names=[self.name],
         )
+
         return AdapterResult(papers=[paper])
 
 
 class _OfflineFailureSource:
     name = "offline-failure"
 
-    def search(self, plan, request) -> AdapterResult:
-        raise RuntimeError("用于验证局部失败降级的离线示例")
+    def search(
+        self,
+        plan,
+        request,
+    ) -> AdapterResult:
+        raise RuntimeError(
+            "用于验证局部失败降级的离线示例"
+        )

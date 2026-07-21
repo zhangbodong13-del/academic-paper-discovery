@@ -182,3 +182,38 @@ def test_pipeline_uses_bundled_impact_metrics_by_default() -> None:
     assert result.papers[0].impact_metric == (
         "CCF A（2022版）/ CORE A*（2023版）"
     )    
+def test_pipeline_uses_online_lookup_when_local_metric_is_missing() -> None:
+    class OnlineImpactSource:
+        name = "online-impact-source"
+
+        def search(self, plan, request) -> AdapterResult:
+            return AdapterResult(
+                papers=[
+                    Paper(
+                        title="A Journal Paper",
+                        venue="Unknown Journal",
+                        source_names=[self.name],
+                    )
+                ]
+            )
+
+    lookup_calls: list[str] = []
+
+    def online_lookup(venue: str) -> str | None:
+        lookup_calls.append(venue)
+        return "IF 8.2（2025 JCR）"
+
+    request = SearchRequest.with_defaults(
+        topic="journal paper",
+        current_year=2026,
+    )
+
+    result = SearchPipeline(
+        [OnlineImpactSource()],
+        current_year=2026,
+        impact_metrics={},
+        impact_online_lookup=online_lookup,
+    ).run(request)
+
+    assert result.papers[0].impact_metric == "IF 8.2（2025 JCR）"
+    assert lookup_calls == ["Unknown Journal"]    
