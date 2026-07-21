@@ -95,16 +95,7 @@ https://github.com/zhangbodong13-del/academic-paper-discovery
 
 ---
 
-## 本地开发
 
-```powershell
-git clone https://github.com/zhangbodong13-del/academic-paper-discovery.git
-cd academic-paper-discovery
-
-py -3.11 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
-.\.venv\Scripts\python.exe -m pytest -q
-```
 
 ---
 
