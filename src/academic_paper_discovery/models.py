@@ -122,6 +122,10 @@ class Paper(BaseModel):
     score: float = 0.0
     score_components: dict[str, float] = Field(default_factory=dict)
     tier: RecommendationTier | None = None
+
+    impact_metric: str = "未核验"
+    innovation: str = "未核验"
+
     why_read: str = ""
     warnings: list[str] = Field(default_factory=list)
 

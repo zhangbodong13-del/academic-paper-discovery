@@ -22,7 +22,7 @@ from academic_paper_discovery.adapters.semantic_scholar import SemanticScholarSo
 from academic_paper_discovery.http import MetadataHttpClient
 from academic_paper_discovery.models import Paper, PaperLink, SearchRequest
 from academic_paper_discovery.pipeline import SearchPipeline
-from academic_paper_discovery.reporting import render_markdown, write_csv, write_json
+from academic_paper_discovery.reporting import render_markdown
 
 
 app = typer.Typer(
@@ -42,7 +42,7 @@ def version() -> None:
     typer.echo(f"academic-paper-discovery {__version__}")
 
 
-@app.command(help="检索论文并生成中文报告、CSV 和 JSON。")
+@app.command(help="检索论文并生成中文报告（仅 Markdown）。")
 def search(
     request: Annotated[
         Path,
@@ -61,7 +61,7 @@ def search(
         typer.Option(
             "--output",
             "-o",
-            help="报告输出目录；会生成 report.md、report.csv、report.json。",
+            help="报告输出目录；会生成 report.md。",
         ),
     ],
     offline_fixture: Annotated[
@@ -76,40 +76,53 @@ def search(
 
     try:
         search_request = _load_request(request)
-    except (OSError, ValueError, json.JSONDecodeError, ValidationError) as error:
+    except (
+        OSError,
+        ValueError,
+        json.JSONDecodeError,
+        ValidationError,
+    ) as error:
         typer.echo(f"请求文件无效：{error}")
         raise typer.Exit(code=2) from error
 
     client: MetadataHttpClient | None = None
+
     if offline_fixture:
-        sources: list[PaperSource] = [_OfflineFixtureSource(), _OfflineFailureSource()]
+        sources: list[PaperSource] = [
+            _OfflineFixtureSource(),
+            _OfflineFailureSource(),
+        ]
     else:
         client = MetadataHttpClient()
         sources = _build_live_sources(client)
 
     try:
-        result = SearchPipeline(sources, current_year=date.today().year).run(
-            search_request
-        )
+        result = SearchPipeline(
+            sources,
+            current_year=date.today().year,
+        ).run(search_request)
     finally:
         if client is not None:
             client.close()
 
     try:
-        output.mkdir(parents=True, exist_ok=True)
+        output.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
         markdown_path = output / "report.md"
-        markdown_path.write_text(render_markdown(result), encoding="utf-8")
-        csv_path = write_csv(result, output / "report.csv")
-        json_path = write_json(result, output / "report.json")
+
+        markdown_path.write_text(
+            render_markdown(result),
+            encoding="utf-8",
+        )
     except OSError as error:
         typer.echo(f"无法写入报告：{error}")
         raise typer.Exit(code=2) from error
 
     typer.echo("检索完成，已生成：")
     typer.echo(f"- Markdown：{markdown_path}")
-    typer.echo(f"- CSV：{csv_path}")
-    typer.echo(f"- JSON：{json_path}")
-
 
 def _load_request(path: Path) -> SearchRequest:
     payload = json.loads(path.read_text(encoding="utf-8-sig"))

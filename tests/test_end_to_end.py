@@ -11,7 +11,7 @@ from academic_paper_discovery.adapters.europe_pmc import EuropePmcSource
 from academic_paper_discovery.http import MetadataHttpClient
 from academic_paper_discovery.models import SearchRequest
 from academic_paper_discovery.pipeline import SearchPipeline
-from academic_paper_discovery.reporting import render_markdown, write_csv, write_json
+from academic_paper_discovery.reporting import render_markdown
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -155,28 +155,56 @@ def test_four_source_end_to_end_report_never_downloads_full_text(tmp_path) -> No
 
     output = tmp_path / "e2e-output"
     output.mkdir()
-    (output / "report.md").write_text(render_markdown(result), encoding="utf-8")
-    write_csv(result, output / "report.csv")
-    write_json(result, output / "report.json")
+
+    markdown_path = output / "report.md"
+    markdown_path.write_text(
+        render_markdown(result),
+        encoding="utf-8",
+    )
 
     assert all(route.called for route in routes)
     assert len(result.papers) == 4
-    merged = next(paper for paper in result.papers if paper.doi == "10.1000/stereo-pose")
+
+    merged = next(
+        paper
+        for paper in result.papers
+        if paper.doi == "10.1000/stereo-pose"
+    )
     assert merged.source_names == ["Crossref", "arXiv"]
     assert len(result.papers) <= 20
 
-    report = (output / "report.md").read_text(encoding="utf-8")
-    payload = json.loads((output / "report.json").read_text(encoding="utf-8"))
-    assert "source_statuses" not in payload
-    assert report.index("## 必读") < report.index("## 强相关")
-    assert report.index("## 强相关") < report.index("## 拓展阅读")
-    assert "## 论文网址" not in report
-    assert "## 数据源检索状态" not in report
-    assert "| 论文链接 | 开源代码 |" in report
-    assert "本次检索未筛选出该层级论文。" in report
+    report = markdown_path.read_text(encoding="utf-8")
 
-    generated_files = [path for path in output.rglob("*") if path.is_file()]
-    assert {path.suffix for path in generated_files} == {".md", ".csv", ".json"}
-    assert not any("fulltext" in path.name.casefold() for path in generated_files)
-    assert not any(path.read_bytes().lstrip().startswith(b"%PDF") for path in generated_files)
+    assert "## 论文对比表" in report
+
+    assert "## 必读" not in report
+    assert "## 强相关" not in report
+    assert "## 拓展阅读" not in report
+    assert "## 局限与下一步" not in report
+
+    assert "影响力指标" in report
+    assert "创新点" in report
+    assert "得分" in report
+    assert "推荐理由" not in report
+
+    assert "| 论文链接 | 开源代码 |" in report
     assert "arxiv.org/pdf/" not in report
+
+    generated_files = [
+        path
+        for path in output.rglob("*")
+        if path.is_file()
+    ]
+
+    assert generated_files == [markdown_path]
+    assert not (output / "report.csv").exists()
+    assert not (output / "report.json").exists()
+
+    assert not any(
+        "fulltext" in path.name.casefold()
+        for path in generated_files
+    )
+    assert not any(
+        path.read_bytes().lstrip().startswith(b"%PDF")
+        for path in generated_files
+    )
