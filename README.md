@@ -92,6 +92,7 @@ https://github.com/zhangbodong13-del/academic-paper-discovery
 | 2 | 强相关 | 示例论文 B | 作者乙等 | 2025 | 示例期刊 | 未核验 | 0.812 | 未核验 | [论文](https://example.org) | 未找到 |
 
 > 表格内容仅用于展示格式，不代表真实检索结果。
+<img width="1327" height="900" alt="image" src="https://github.com/user-attachments/assets/eaf64eed-9f1b-49d5-9cc7-d0c6dd6c357b" />
 
 ---
 
