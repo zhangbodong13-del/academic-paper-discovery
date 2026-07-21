@@ -31,3 +31,5 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--strict-markers"
+[tool.setuptools.package-data]
+academic_paper_discovery = ["data/*.json"]
