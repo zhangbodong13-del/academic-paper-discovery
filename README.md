@@ -121,6 +121,7 @@ py -3.11 -m venv .venv
 
 <div align="center">
 
-**让论文检索从到处搜索，变成结构化比较。**
+**后续开发正在进行<img width="1149" height="1369" alt="ChatGPT Image 2026年7月21日 17_27_22" src="https://github.com/user-attachments/assets/14c1c19e-710e-4042-8019-6755523c7389" />
+**
 
 </div>
